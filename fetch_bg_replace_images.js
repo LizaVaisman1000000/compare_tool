@@ -5,7 +5,7 @@
 const fs = require('fs');
 const { v2: cloudinary } = require('cloudinary');
 
-// Configure from environment or .env
+// Configure your Cloudinary environment here:
 cloudinary.config({
   cloud_name: '<your_cloudinary_cloud_name>',
   api_key: '<your_cloudinary_api_key>',
