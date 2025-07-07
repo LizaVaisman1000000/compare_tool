@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudinary BG Replace Comparison Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f3f3f3;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    .compare-container {
+      max-width: 98vw;
+      width: 98vw;
+      margin: 24px auto 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      padding: 0 0 24px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 18px;
+      background: #f7f7f7;
+      border-bottom: 1px solid #e0e0e0;
+      border-radius: 10px 10px 0 0;
+      padding: 18px 24px 12px 24px;
+      min-height: 56px;
+    }
+    .toolbar label {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-right: 6px;
+      color: #444;
+    }
+    .toolbar select, .toolbar input[type="text"] {
+      padding: 7px 10px;
+      border-radius: 5px;
+      border: 1px solid #cfd8dc;
+      font-size: 1rem;
+      background: #fff;
+      transition: border 0.2s;
+      margin-right: 10px;
+    }
+    .toolbar select:focus, .toolbar input[type="text"]:focus {
+      border: 1.5px solid #1976d2;
+      outline: none;
+    }
+    .toolbar .update-btn {
+      padding: 8px 22px;
+      border-radius: 5px;
+      border: none;
+      background: #1976d2;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-left: 8px;
+    }
+    .toolbar .update-btn:hover {
+      background: #1256a3;
+    }
+    .images-row {
+      display: flex;
+      flex-direction: row;
+      gap: 2vw;
+      justify-content: center;
+      align-items: flex-start;
+      margin: 32px 0 0 0;
+      padding: 0 2vw;
+      width: 100%;
+    }
+    .img-block {
+      position: relative;
+      background: #fafbfc;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      padding: 18px 12px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+      width: 30vw;
+      max-width: 33vw;
+    }
+    .copy-url-btn {
+      position: absolute;
+      top: 24px;
+      right: 18px;
+      padding: 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e0e0e0;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s, background-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #666;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    .img-block:hover .copy-url-btn {
+      opacity: 1;
+    }
+    .copy-url-btn:hover {
+      background: rgba(255, 255, 255, 1);
+      color: #1976d2;
+    }
+    .copy-url-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .copy-success {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #323232;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .url-box {
+      width: 100%;
+      font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+      font-size: 0.97rem;
+      background: #f4f6fa;
+      color: #1a237e;
+      border-radius: 4px;
+      padding: 7px 8px 7px 8px;
+      margin-bottom: 10px;
+      word-break: break-all;
+      cursor: pointer;
+      border: 1px solid #e3e6ee;
+      box-sizing: border-box;
+      user-select: all;
+      text-align: left;
+    }
+    .url-box a {
+      color: #1976d2;
+      text-decoration: underline;
+      word-break: break-all;
+      font-family: inherit;
+      font-size: inherit;
+      background: none;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      user-select: all;
+      display: inline-block;
+      width: 100%;
+    }
+    .url-box a:hover {
+      color: #0d47a1;
+      text-decoration: underline;
+    }
+    .img-block img {
+      max-width: 100%;
+      max-height: 60vh;
+      min-height: 200px;
+      border-radius: 5px;
+      background: #eaeaea;
+      margin-bottom: 10px;
+      display: block;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      object-fit: contain;
+    }
+    .img-label {
+      font-size: 1.04rem;
+      color: #555;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 0;
+      line-height: 1.2;
+      font-weight: 500;
+    }
+    .footer {
+      text-align: center;
+      margin: 18px auto 0 auto;
+      color: #aaa;
+      font-size: 0.97rem;
+      max-width: 1100px;
+    }
+    @media (max-width: 1100px) {
+      .compare-container {
+        max-width: 99vw;
+        width: 99vw;
+      }
+      .images-row {
+        gap: 10px;
+        padding: 0 1vw;
+      }
+      .img-block {
+        width: 45vw;
+        max-width: 99vw;
+      }
+    }
+    @media (max-width: 900px) {
+      .images-row {
+        flex-direction: column;
+        gap: 18px;
+        align-items: center;
+        padding: 0 2vw;
+      }
+      .img-block {
+        width: 98vw;
+        min-width: 0;
+        max-width: 99vw;
+      }
+      .img-block img {
+        max-width: 98vw;
+        max-height: 40vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="compare-container">
+    <div class="toolbar">
+      <label for="imageSelect">Select Image:</label>
+      <select id="imageSelect"></select>
+      <label for="promptInput">Prompt (optional):</label>
+      <input type="text" id="promptInput" placeholder="Describe the background..." />
+      <button id="refreshBtn" class="update-btn">Update</button>
+    </div>
+    <div class="images-row">
+      <div class="img-block">
+        <div class="url-box"><a id="originalUrlBox" href="#" target="_blank" rel="noopener noreferrer"></a></div>
+        <button class="copy-url-btn" onclick="copyUrl('originalUrlBox')">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy URL
+        </button>
+        <img id="originalImg" src="" alt="Original" />
+        <div class="img-label">Original</div>
+      </div>
+      <div class="img-block">
+        <div class="url-box"><a id="genBgReplaceUrlBox" href="#" target="_blank" rel="noopener noreferrer"></a></div>
+        <button class="copy-url-btn" onclick="copyUrl('genBgReplaceUrlBox')">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy URL
+        </button>
+        <img id="genBgReplaceImg" src="" alt="Gen BG Replace" />
+        <div class="img-label">e_gen_background_replace:prompt_&lt;prompt&gt;</div>
+      </div>
+      <div class="img-block">
+        <div class="url-box"><a id="aiBgReplaceUrlBox" href="#" target="_blank" rel="noopener noreferrer"></a></div>
+        <button class="copy-url-btn" onclick="copyUrl('aiBgReplaceUrlBox')">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy URL
+        </button>
+        <img id="aiBgReplaceImg" src="" alt="AI BG Replace" />
+        <div class="img-label">e_ai:model_bg-replace;details_(target-prompt_&lt;prompt&gt;)</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    Powered by Cloudinary | Folder: <b>BG_replace</b> | Account: <b>lizatest1</b>
+  </div>
+  <div id="copySuccess" class="copy-success">Copied!</div>
+  <script>
+    // --- CONFIG ---
+    const cloudName = 'lizatest1';
+    const imageListUrl = 'bg_replace_images.json'; // New: fetch from JSON
+    // ---
+
+    // Helper: build Cloudinary URL
+    function buildUrl(publicId, transformation) {
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${transformation ? transformation + '/' : ''}${publicId}`;
+    }
+
+    // UI Elements
+    const imageSelect = document.getElementById('imageSelect');
+    const promptInput = document.getElementById('promptInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const originalImg = document.getElementById('originalImg');
+    const genBgReplaceImg = document.getElementById('genBgReplaceImg');
+    const aiBgReplaceImg = document.getElementById('aiBgReplaceImg');
+
+    // Populate image dropdown from fetched list
+    function populateImages(imageList) {
+      if (!imageList || imageList.length === 0) {
+        imageSelect.innerHTML = '<option>No images found</option>';
+        return;
+      }
+      imageSelect.innerHTML = imageList.map(id => `<option value="${id}">${id.replace(/^.*\//, '')}</option>`).join('');
+    }
+
+    // Update images
+    function updateImages() {
+      const publicId = imageSelect.value;
+      const prompt = promptInput.value.trim();
+      // URL encode prompt for Cloudinary transformation
+      const encodedPrompt = encodeURIComponent(prompt);
+      // 1. Original
+      const originalUrl = buildUrl(publicId, '');
+      originalImg.src = originalUrl;
+      const originalUrlBox = document.getElementById('originalUrlBox');
+      originalUrlBox.href = originalUrl;
+      originalUrlBox.textContent = originalUrl;
+      // 2. e_gen_background_replace:prompt_<prompt>
+      let genTrans = prompt ? `e_gen_background_replace:prompt_${encodedPrompt}` : 'e_gen_background_replace';
+      const genUrl = buildUrl(publicId, genTrans);
+      genBgReplaceImg.src = genUrl;
+      const genBgReplaceUrlBox = document.getElementById('genBgReplaceUrlBox');
+      genBgReplaceUrlBox.href = genUrl;
+      genBgReplaceUrlBox.textContent = genUrl;
+      // 3. e_ai:model_bg-replace;details_(target-prompt_<prompt>)
+      let aiTrans = prompt ? `e_ai:model_bg-replace;details_(target-prompt_!${encodedPrompt}!)` : 'e_ai:model_bg-replace';
+      const aiUrl = buildUrl(publicId, aiTrans);
+      aiBgReplaceImg.src = aiUrl;
+      const aiBgReplaceUrlBox = document.getElementById('aiBgReplaceUrlBox');
+      aiBgReplaceUrlBox.href = aiUrl;
+      aiBgReplaceUrlBox.textContent = aiUrl;
+    }
+
+    // Event listeners
+    imageSelect.addEventListener('change', updateImages);
+    refreshBtn.addEventListener('click', updateImages);
+    promptInput.addEventListener('keydown', e => { if (e.key === 'Enter') updateImages(); });
+
+    // Init: fetch image list JSON
+    (function() {
+      imageSelect.innerHTML = '<option>Loading...</option>';
+      fetch(imageListUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to load image list');
+          return res.json();
+        })
+        .then(imageList => {
+          populateImages(imageList);
+          if (imageList.length > 0) {
+            imageSelect.value = imageList[0];
+            updateImages();
+          }
+        })
+        .catch(err => {
+          imageSelect.innerHTML = '<option>Error loading images</option>';
+          console.error('Error loading image list:', err);
+        });
+    })();
+
+    // Copy URL to clipboard
+    async function copyUrl(elementId) {
+      const element = document.getElementById(elementId);
+      const url = element.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        showCopySuccess();
+      } catch (err) {
+        console.error('Failed to copy URL:', err);
+      }
+    }
+
+    // Show success message
+    function showCopySuccess() {
+      const toast = document.getElementById('copySuccess');
+      toast.style.opacity = '1';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+      }, 2000);
+    }
+  </script>
+</body>
+</html> 

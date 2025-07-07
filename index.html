@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudinary BG Replace Comparison Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f6f8fa;
+            margin: 0;
+            padding: 0;
+            color: #222;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+            padding: 32px 24px 24px 24px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 2.2rem;
+            color: #2a3a4a;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+        .controls label {
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        .controls select, .controls input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+        .images-row {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .img-col {
+            flex: 1 1 250px;
+            max-width: 280px;
+            background: #f9fafb;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            padding: 16px 8px 12px 8px;
+            text-align: center;
+        }
+        .img-col img {
+            max-width: 100%;
+            max-height: 320px;
+            border-radius: 6px;
+            background: #eaeaea;
+        }
+        .img-col .caption {
+            margin-top: 10px;
+            font-size: 1rem;
+            color: #555;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+        @media (max-width: 900px) {
+            .container { padding: 16px 4vw; }
+            .images-row { flex-direction: column; align-items: stretch; }
+            .img-col { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+        <div class="container">
+        <h1>Cloudinary BG Replace Comparison Tool</h1>
+        <div class="controls">
+            <div>
+                <label for="imageSelect">Select Image:</label>
+                <select id="imageSelect"></select>
+                </div>
+            <div>
+                <label for="promptInput">Prompt (optional):</label>
+                <input type="text" id="promptInput" placeholder="Describe the background..." />
+            </div>
+            <button id="refreshBtn" style="padding:8px 18px;border-radius:6px;border:none;background:#2a3a4a;color:#fff;font-weight:600;cursor:pointer;">Update</button>
+        </div>
+        <div class="images-row">
+            <div class="img-col">
+                <img id="originalImg" src="" alt="Original" />
+                <div class="caption">Original</div>
+            </div>
+            <div class="img-col">
+                <img id="genBgReplaceImg" src="" alt="Gen BG Replace" />
+                <div class="caption">e_gen_background_replace:prompt_&lt;prompt&gt;</div>
+            </div>
+            <div class="img-col">
+                <img id="aiBgReplaceImg" src="" alt="AI BG Replace" />
+                <div class="caption">e_ai:model_bg-replace;details_(target-prompt_&lt;prompt&gt;)</div>
+            </div>
+        </div>
+        <div class="footer">
+            Powered by Cloudinary | Folder: <b>BG_replace</b> | Account: <b>lizatest1</b>
+        </div>
+    </div>
+    <script>
+        // --- CONFIG ---
+        const cloudName = 'lizatest1';
+        const folder = 'BG_replace';
+        // ---
+
+        // Helper: fetch image list from Cloudinary folder (unsigned, public)
+        async function fetchImageList() {
+            // Using Cloudinary's public API for demo (max 100 images)
+            const url = `https://res.cloudinary.com/${cloudName}/image/list/${folder}.json`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Could not fetch image list.');
+                const data = await res.json();
+                return data.resources.map(img => img.public_id);
+            } catch (e) {
+                alert('Failed to load image list from Cloudinary. Please check folder sharing settings.');
+                return [];
+            }
+        }
+
+        // Helper: build Cloudinary URL
+        function buildUrl(publicId, transformation) {
+            return `https://res.cloudinary.com/${cloudName}/image/upload/${transformation ? transformation + '/' : ''}${publicId}.jpg`;
+        }
+
+        // UI Elements
+        const imageSelect = document.getElementById('imageSelect');
+        const promptInput = document.getElementById('promptInput');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const originalImg = document.getElementById('originalImg');
+        const genBgReplaceImg = document.getElementById('genBgReplaceImg');
+        const aiBgReplaceImg = document.getElementById('aiBgReplaceImg');
+
+        // State
+        let imageList = [];
+
+        // Populate image dropdown
+        async function populateImages() {
+            imageSelect.innerHTML = '<option>Loading...</option>';
+            imageList = await fetchImageList();
+            if (imageList.length === 0) {
+                imageSelect.innerHTML = '<option>No images found</option>';
+                return;
+                }
+            imageSelect.innerHTML = imageList.map(id => `<option value="${id}">${id.replace(folder + '/', '')}</option>`).join('');
+        }
+
+        // Update images
+        function updateImages() {
+            const publicId = imageSelect.value;
+            const prompt = promptInput.value.trim();
+            // URL encode prompt for Cloudinary transformation
+            const encodedPrompt = encodeURIComponent(prompt);
+            // 1. Original
+            originalImg.src = buildUrl(publicId, '');
+            // 2. e_gen_background_replace:prompt_<prompt>
+            let genTrans = prompt ? `e_gen_background_replace:prompt_${encodedPrompt}` : 'e_gen_background_replace';
+            genBgReplaceImg.src = buildUrl(publicId, genTrans);
+            // 3. e_ai:model_bg-replace;details_(target-prompt_<prompt>)
+            let aiTrans = prompt ? `e_ai:model_bg-replace;details_(target-prompt_${encodedPrompt})` : 'e_ai:model_bg-replace';
+            aiBgReplaceImg.src = buildUrl(publicId, aiTrans);
+        }
+
+        // Event listeners
+        imageSelect.addEventListener('change', updateImages);
+        refreshBtn.addEventListener('click', updateImages);
+        promptInput.addEventListener('keydown', e => { if (e.key === 'Enter') updateImages(); });
+
+        // Init
+        (async function() {
+            await populateImages();
+            if (imageList.length > 0) {
+                imageSelect.value = imageList[0];
+                updateImages();
+            }
+        })();
+    </script>
+</body>
+</html> 
